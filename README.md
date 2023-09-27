@@ -7,5 +7,3 @@ Repository of the student project. Containing a Python implemented compression o
 The decompression is fulfilled on FPGAs with the target to create a maximal data throughput. 
 
 The folder compression contains the implementation for the compressions in python
-
-The decompression folder contains the FPGA implementation for the decompression
