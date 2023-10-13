@@ -41,9 +41,10 @@ def compress_table_to_binary(database, file_path, table_name):
                     uncompressed_data = input_table[column_name]
 
                     try: #Check if Date or Datetime
-                        res = bool(datetime.strptime(uncompressed_data[0], "%Y-%m-%d"))
+                        isDate = bool(datetime.strptime(uncompressed_data[0], "%Y-%m-%d"))
                         input_bytes = len(uncompressed_data) * 3
                     except ValueError:
+                        isDate = False
                         input_bytes = len(uncompressed_data) * 8
 
                     sizeOfTable = sizeOfTable + input_bytes
@@ -62,8 +63,12 @@ def compress_table_to_binary(database, file_path, table_name):
                     data_size_dict['date_to_number'] = build_binary.size_float_in_binary(converted_date, input_bytes)
 
                     # Convert float to integer
-                    decimal_places, uncompressed_converted_data = convert.convert_float_to_integer(converted_date)
-                    data_size_dict['float_to_int'] = size_int_in_binary(uncompressed_converted_data, input_bytes, 0)
+                    if isDate:
+                        uncompressed_converted_data = convert.cast_float_to_integer(converted_date)
+                        data_size_dict['float_to_int'] = size_int_in_binary(uncompressed_converted_data, input_bytes, 0)
+                    else:
+                        decimal_places, uncompressed_converted_data = convert.convert_float_to_integer(converted_date)
+                        data_size_dict['float_to_int'] = size_int_in_binary(uncompressed_converted_data, input_bytes, 0)
 
                     #Compression of integer
                     data_size_dict, compressed_data = integer_compressions(data_size_dict, uncompressed_converted_data, input_bytes)
@@ -123,7 +128,7 @@ def compress_table_to_binary(database, file_path, table_name):
                 data_size_dict, compressed_data = integer_compressions(data_size_dict, uncompressed_converted_data, input_bytes)
 
                 #get best result
-                if compressed_data <= compressed_data_split:
+                if len(compressed_data) <= len(compressed_data_split):
                     binaries = compressed_data
                 else:
                     binaries = compressed_data_split
@@ -206,15 +211,15 @@ def integer_compressions(data_size_dict, uncompressed_data, input_bytes):
     delta_run_huff_compression_size = build_binary.size_text_in_binary(delt_run_huff_compressed_data[0], input_bytes)
     data_size_dict['delta_run_huffman'] = delta_run_huff_compression_size
 
-    delta_huff_compressed_data_huff = huffman_static_numbers.huffman_encoding(delta_compressed_data)
-    delta_huff_compression_size = build_binary.size_text_in_binary(delta_huff_compressed_data_huff[0], input_bytes)
+    delta_huff_compressed_data = huffman_static_numbers.huffman_encoding(delta_compressed_data)
+    delta_huff_compression_size = build_binary.size_text_in_binary(delta_huff_compressed_data[0], input_bytes)
     data_size_dict['delta_huffman'] = delta_huff_compression_size
 
-    delta_huff_compressed_data_huff = huffman_static_numbers.huffman_encoding(uncompressed_data)
-    delta_huff_compression_size = build_binary.size_text_in_binary(delta_huff_compressed_data_huff[0], input_bytes)
-    data_size_dict['huffman'] = delta_huff_compression_size
+    huff_compressed_data = huffman_static_numbers.huffman_encoding(uncompressed_data)
+    huff_compression_size = build_binary.size_text_in_binary(huff_compressed_data[0], input_bytes)
+    data_size_dict['huffman'] = huff_compression_size
 
-    smallest = min(delta_compression_size, delta_run_compression_size, delta_run_huff_compression_size, delta_huff_compression_size)
+    smallest = min(delta_compression_size, delta_run_compression_size, delta_run_huff_compression_size, delta_huff_compression_size, huff_compression_size)
 
     # Depending on the smallest value, return a corresponding value
     if smallest == delta_compression_size:
@@ -223,8 +228,10 @@ def integer_compressions(data_size_dict, uncompressed_data, input_bytes):
         result = build_binary_for_list_of_numbers(1, delta_run_compressed_data)
     elif smallest == delta_run_huff_compression_size:
         result = delt_run_huff_compressed_data[0]
+    elif smallest == delta_huff_compression_size:
+        result = delta_huff_compressed_data[0]
     else:
-        result = delta_huff_compressed_data_huff[0]
+        result = huff_compressed_data[0]
 
     return data_size_dict, result
 
@@ -235,37 +242,37 @@ def float_compression(data_size_dict, uncompressed_data, input_bytes):
 
     delta_compressed_data_exponent, factor_changes_exponent = delta.delta_encode(uncompressed_data_exponent)
     delta_compression_exponent_size = size_int_in_binary(delta_compressed_data_exponent, input_bytes, 1)
-    data_size_dict['exponent_delta'] = delta_compression_exponent_size
+    data_size_dict['exp_delta'] = delta_compression_exponent_size
 
     delta_run_compressed_data_exponent = runlength.runlength_encode(delta_compressed_data_exponent)
     delta_run_compression_exponent_size = size_int_in_binary(delta_run_compressed_data_exponent, input_bytes, 1)
-    data_size_dict['exponent_delta_run'] = delta_run_compression_exponent_size
+    data_size_dict['exp_del_run'] = delta_run_compression_exponent_size
 
     delta_run_huff_compressed_data_exponent = huffman_static_numbers.huffman_encoding(delta_run_compressed_data_exponent)
     delta_run_huff_compression_exponent_size = build_binary.size_text_in_binary(delta_run_huff_compressed_data_exponent[0], input_bytes)
-    data_size_dict['exponent_delta_run_huffman'] = delta_run_huff_compression_exponent_size
+    data_size_dict['exp_del_run_huff'] = delta_run_huff_compression_exponent_size
 
     delta_huff_compressed_data_exponent = huffman_static_numbers.huffman_encoding(delta_compressed_data_exponent)
     delta_huff_compression_exponent_size = build_binary.size_text_in_binary(delta_huff_compressed_data_exponent[0],input_bytes)
-    data_size_dict['exponent_delta_huffman'] = delta_huff_compression_exponent_size
+    data_size_dict['exp_del_huff'] = delta_huff_compression_exponent_size
 
 
     decimal_places_mantissa, uncompressed_converted_data_mantissa = convert.convert_float_to_integer(uncompressed_data_mantissa)
     delta_compressed_data_mantissa, factor_changes_mantissa = delta.delta_encode(uncompressed_converted_data_mantissa)
     delta_compression_mantissa_size = size_int_in_binary(delta_compressed_data_mantissa, input_bytes, 1)
-    data_size_dict['mantissa_delta'] = delta_compression_mantissa_size
+    data_size_dict['man_delta'] = delta_compression_mantissa_size
 
     delta_run_compressed_data_mantissa = runlength.runlength_encode(delta_compressed_data_mantissa)
     delta_run_compression_mantissa_size = size_int_in_binary(delta_run_compressed_data_mantissa, input_bytes, 0)
-    data_size_dict['mantissa_delta_run'] = delta_run_compression_mantissa_size
+    data_size_dict['man_del_run'] = delta_run_compression_mantissa_size
 
     delta_run_huff_compressed_data_mantissa = huffman_static_numbers.huffman_encoding(delta_run_compressed_data_mantissa)
     delta_run_huff_compression_mantissa_size = build_binary.size_text_in_binary(delta_run_huff_compressed_data_mantissa[0], input_bytes)
-    data_size_dict['mantissa_delta_run_huffman'] = delta_run_huff_compression_mantissa_size
+    data_size_dict['man_del_run_huff'] = delta_run_huff_compression_mantissa_size
 
     delta_huff_compressed_data_mantissa = huffman_static_numbers.huffman_encoding(delta_compressed_data_mantissa)
     delta_huff_compression_size_mantissa = build_binary.size_text_in_binary(delta_huff_compressed_data_mantissa[0], input_bytes)
-    data_size_dict['mantissa_delta_huffman'] = delta_huff_compression_size_mantissa
+    data_size_dict['man_del_huff'] = delta_huff_compression_size_mantissa
 
     smallestExponent = min(delta_compression_exponent_size, delta_run_compression_exponent_size,
                            delta_run_huff_compression_exponent_size, delta_huff_compression_exponent_size)
