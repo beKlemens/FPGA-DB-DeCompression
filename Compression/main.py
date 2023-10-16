@@ -24,12 +24,11 @@ def compress_file(database, file_path, tablename):
 if __name__ == '__main__':
 
     #Set name of database folder to be compressed
-    database = 'database_tpch'
+    database = 'database_stackoverflow'
 
     #Set functionalities
-    calculateEntropy = True
+    calculateEntropy = False
     doCompression = True
-    doDecompression = False
 
     #Start entropy calculation
     if calculateEntropy:
@@ -38,7 +37,7 @@ if __name__ == '__main__':
 
         for i in range(0, len(listOfFilesToCompress)):
             entropyCalculation.calculateEntropyOfTable(database + '/raw_data/' + listOfFilesToCompress[i], file_names[i])
-        #entropyCalculation.calculateEntropyOfTable(database + '/raw_data/lineitem.tbl', 'lineitem')
+        #entropyCalculation.calculateEntropyOfTable(database + '/raw_data/test_column.csv', 'test_column')
 
     #Do compression
     if doCompression:
@@ -64,7 +63,7 @@ if __name__ == '__main__':
 
         for i in range(0, len(listOfFilesToCompress)):
             compress_file(database, database + '/raw_data/' + listOfFilesToCompress[i], file_names[i])
-        #compress_file(database, database + '/raw_data/lineitem.tbl', 'lineitem')
+        #compress_file(database, database + '/raw_data/test_column.csv', 'test_column')
 
         end_time = time.time()
         compression_time = end_time - start_time
