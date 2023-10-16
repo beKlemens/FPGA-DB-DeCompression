@@ -22,10 +22,6 @@ def build_binary_for_list_of_numbers(datatype, compressed_data):
                 string_list = list(bits)
                 string_list[0] = "1"
                 bits = ''.join(string_list)
-
-                #build twos complement
-                #inverted_binary = ''.join('1' if bit == '0' else '0' for bit in bits)
-                #bits = bin(int(inverted_binary, 2) + 1)[2:].zfill(bit_size)
         else:
             num = 0
             bits = bin(abs(num))[2:].zfill(bit_size)
@@ -38,7 +34,6 @@ def build_binary_for_list_of_numbers(datatype, compressed_data):
 
 
 def build_binary_for_list_of_text(compressed_data, is_compressed):
-
     if is_compressed:
         return compressed_data
     else:
