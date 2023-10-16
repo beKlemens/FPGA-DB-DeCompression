@@ -19,8 +19,8 @@ def get_numbers_code():
     ascii_binary_tree[54]= bitarray('0100')
     ascii_binary_tree[55]= bitarray('1110')
     ascii_binary_tree[56]= bitarray('0001')
-    ascii_binary_tree[57]= bitarray('0000')
-    ascii_binary_tree[124]= bitarray('1010')
+    ascii_binary_tree[57]= bitarray('1010')
+    ascii_binary_tree[124]= bitarray('0000')
 
     return ascii_binary_tree
 
@@ -41,7 +41,7 @@ def huffman_encoding(input_data):
     encoding_result = []
     #set separator between entry
     sign = "|"
-    plain = sign.join(str(item) if item is not None else 'null' for item in input_data).encode('utf-8')
+    plain = sign.join(str(item) if item is not None else '0' for item in input_data).encode('utf-8')
     encoded_data = encode(plain)
 
     encoding_result.append(encoded_data)
